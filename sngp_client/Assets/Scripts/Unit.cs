@@ -4,7 +4,7 @@ namespace SNGPClient
 {
     public class Unit : MonoBehaviour
     {
-        Animator _animator;
+        private Animator _animator;
 
         void Start()
         {

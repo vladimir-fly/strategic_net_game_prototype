@@ -18,28 +18,26 @@ namespace SNGPClient
         {
             try
             {
-                var client = new TcpClient();
-                client.Connect(IPAddress.Loopback, 8888);
-
-                Debug.Log("connected.");
-
-                byte[] data = new byte[256];
-                StringBuilder response = new StringBuilder();
-                NetworkStream stream = client.GetStream();
-
-                do
+                using (var client = new TcpClient())
                 {
-                    int bytes = stream.Read(data, 0, data.Length);
-                    response.Append(Encoding.UTF8.GetString(data, 0, bytes));
-                } while (stream.DataAvailable);
+                    client.Connect(IPAddress.Loopback, 8888);
 
-                resp = response.ToString();
+                    Debug.Log("connected.");
 
-                Debug.Log(response.ToString());
+                    var data = new byte[256];
+                    var response = new StringBuilder();
+                    using (var stream = client.GetStream())
+                    {
+                        while (stream.DataAvailable)
+                        {
+                            var bytes = stream.Read(data, 0, data.Length);
+                            response.Append(Encoding.UTF8.GetString(data, 0, bytes));
+                        }
 
-                // Закрываем потоки
-                stream.Close();
-                client.Close();
+                        resp = response.ToString();
+                        Debug.Log(response.ToString());
+                    }
+                }
             }
             catch (SocketException e)
             {
@@ -55,7 +53,6 @@ namespace SNGPClient
 
         void OnGUI()
         {
-            Debug.Log("ongui: " + resp);
             GUI.Label(new Rect(10, 10, 100, 20), resp);
         }
 
@@ -63,7 +60,5 @@ namespace SNGPClient
         {
 
         }
-
-
     }
 }
