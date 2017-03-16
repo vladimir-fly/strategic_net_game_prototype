@@ -1,7 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using UnityEngine;
 
 using Debug = UnityEngine.Debug;
@@ -10,55 +11,79 @@ namespace SNGPClient
 {
     public class App : MonoBehaviour
     {
+        private const int port = 8000;
         public Playground Playground;
-
-        public string resp = "nothing";
 
         void Start()
         {
+            Playground.NodeSelected =
+                nodeId =>
+                {
+                    if (Playground != null && Playground.SelectedUnits != null)
+                        Debug.Log("Number of selected units is " + Playground.SelectedUnits.Count);
+
+                    //if (!Playground.SelectedUnits.Any()) return;
+                    //todo fix it
+
+                    foreach (var unit in Playground.SelectedUnits)
+                    {
+                        var direction = MakeRequest(EMessageType.MoveDataRequest, new List<byte>{unit.Id, nodeId}).FirstOrDefault();
+
+                        Debug.Log("Direction is " + ((Direction)direction).ToString());
+
+                        unit.StartMoving((Direction) direction);
+                    }
+                };
+
+            Playground.InitNodes(PlaygroundSizeRequest());
+            Playground.InitUnits(UnitsDataRequest());
+        }
+
+        private byte PlaygroundSizeRequest()
+        {
+            var result = MakeRequest(EMessageType.PlaygroundSizeRequest, new byte[0]).FirstOrDefault();
+            return result;
+        }
+
+        private IEnumerable<byte> UnitsDataRequest()
+        {
+            var result = MakeRequest(EMessageType.UnitsDataRequest, new byte[0]);
+            return result;
+        }
+
+        private byte[] MakeRequest(EMessageType type, IEnumerable<byte> data)
+        {
+            var result = new byte[6];
             try
             {
                 using (var client = new TcpClient())
                 {
-                    client.Connect(IPAddress.Loopback, 8888);
+                    client.Connect(IPAddress.Loopback, port);
+                    var requestData = new List<byte> {(byte) type}.Concat(data).ToList();
 
-                    Debug.Log("connected.");
-
-                    var data = new byte[256];
-                    var response = new StringBuilder();
                     using (var stream = client.GetStream())
                     {
-                        while (stream.DataAvailable)
-                        {
-                            var bytes = stream.Read(data, 0, data.Length);
-                            response.Append(Encoding.UTF8.GetString(data, 0, bytes));
-                        }
-
-                        resp = response.ToString();
-                        Debug.Log(response.ToString());
+                        stream.Write(requestData.ToArray(), 0, requestData.Count);
+                        do stream.Read(result, 0, result.Length);
+                        while (stream.DataAvailable);
                     }
                 }
             }
-            catch (SocketException e)
-            {
-                Debug.Log(string.Format("SocketException: {0}", e));
-            }
-            catch (Exception e)
-            {
-                Debug.Log(string.Format("Exception: {0}", e.Message));
-            }
-
-            Debug.Log("Запрос завершен...");
+            catch (Exception e) { Debug.LogError("Exception " + e); }
+            return result;
         }
 
-        void OnGUI()
-        {
-            GUI.Label(new Rect(10, 10, 100, 20), resp);
-        }
-
-        void Update()
-        {
-
-        }
+//        void OnGUI()
+//        {
+//            if (GUI.Button(new Rect(10f, 10f, 150f, 30f), "Units request"))
+//            {
+//                Debug.Log("Playgrouns size: ");
+//
+//                foreach (var unit in UnitsDataRequest())
+//                {
+//                    Debug.Log("unitId = " + unit);
+//                }
+//            }
+//        }s
     }
 }

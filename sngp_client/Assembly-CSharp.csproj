@@ -4,7 +4,7 @@
     <unityVersion>5.6.0xb1Linux</unityVersion>
   </PropertyGroup>
   <PropertyGroup>
-    <unityProcessId>13263</unityProcessId>
+    <unityProcessId>16522</unityProcessId>
   </PropertyGroup>
   <PropertyGroup>
     <LangVersion>4</LangVersion>
@@ -57,6 +57,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Scripts\App.cs" />
+    <Compile Include="Assets\Scripts\Enums.cs" />
     <Compile Include="Assets\Scripts\Node.cs" />
     <Compile Include="Assets\Scripts\Playground.cs" />
     <Compile Include="Assets\Scripts\Unit.cs" />

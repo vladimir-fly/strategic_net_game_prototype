@@ -1,48 +1,68 @@
 ﻿using System;
-using System.Collections.Generic;
-
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 
 namespace sngp_server
 {
+    internal enum EMessageType
+    {
+        PlaygroundSizeRequest = 0, //1 byte
+        UnitsDataRequest = 1, // >= 5 bytes
+        MoveDataRequest = 2 // 2 bytes
+    }
+
     internal class Program
     {
-        const int port = 8888; // порт для прослушивания подключений
+        private const int port = 8000;
+        private const byte playgroundSize = 10;
+        private static byte[] units = {22, 33, 01, 23, 44, 17};
 
-        static void Main(string[] args)
+        static void Main()
         {
             TcpListener server = null;
             try
             {
-                IPAddress localAddr = IPAddress.Parse("127.0.0.1");
+                var localAddr = IPAddress.Parse("127.0.0.1");
                 server = new TcpListener(localAddr, port);
-
-                // запуск слушателя
                 server.Start();
 
                 while (true)
                 {
-                    Console.WriteLine("Ожидание подключений... ");
+                    Console.WriteLine("Waiting client... ");
 
-                    // получаем входящее подключение
-                    TcpClient client = server.AcceptTcpClient();
-                    Console.WriteLine("Подключен клиент. Выполнение запроса...");
+                    var client = server.AcceptTcpClient();
 
-                    // получаем сетевой поток для чтения и записи
-                    NetworkStream stream = client.GetStream();
+                    Console.WriteLine("Client connected. Parse request...");
 
-                    // сообщение для отправки клиенту
-                    string response = "Привет мир";
-                    // преобразуем сообщение в массив байтов
-                    byte[] data = Encoding.UTF8.GetBytes(response);
+                    using (var stream = client.GetStream())
+                    {
+                        var requestData = new byte[6];
+                        stream.Read(requestData, 0, requestData.Length);
 
-                    // отправка сообщения
-                    stream.Write(data, 0, data.Length);
-                    Console.WriteLine("Отправлено сообщение: {0}", response);
-                    // закрываем подключение
-                    client.Close();
+                        Console.WriteLine($"Request id is: {requestData[0]}");
+
+                        var responseData = new byte[0];
+                        switch (requestData[0])
+                        {
+                            case (byte) EMessageType.PlaygroundSizeRequest:
+                                responseData = new []{playgroundSize};
+                                Console.WriteLine($"Playground size is {responseData.FirstOrDefault()}");
+
+                                break;
+                            case (byte) EMessageType.UnitsDataRequest:
+                                responseData = units;
+                                Console.WriteLine($"Response is {string.Join(", ", units)}");
+
+                                break;
+                            case (byte) EMessageType.MoveDataRequest:
+                                responseData = new []{MoveUnit(requestData[1], requestData[2])};
+                                Console.WriteLine($"Move direction is {responseData[0]}");
+                                break;
+                        }
+
+                        stream.Write(responseData, 0, responseData.Length);
+                    }
                 }
             }
             catch (Exception e)
@@ -53,6 +73,11 @@ namespace sngp_server
             {
                 server?.Stop();
             }
+        }
+
+        private static byte MoveUnit(byte unitId, byte NodeId)
+        {
+            return 0;
         }
     }
 }

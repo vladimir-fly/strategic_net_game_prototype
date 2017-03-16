@@ -1,22 +1,19 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 namespace SNGPClient
 {
     public class Node : MonoBehaviour
     {
-        void Start()
-        {
-
-        }
-
-        void Update()
-        {
-
-        }
+        public byte Id;
+        public event Action<byte> OnSelected;
 
         void OnMouseUp()
         {
-            Debug.Log("node click");
+            if (OnSelected != null)
+                OnSelected(Id);
+
+            Debug.Log("Node " + Id + "selected!");
         }
     }
 }
