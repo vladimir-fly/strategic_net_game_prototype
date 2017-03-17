@@ -20,6 +20,10 @@ namespace sngp_server
 
         static void Main()
         {
+            var pg = new Playground(playgroundSize, units.ToList());
+            pg.MoveUnit(22, 25);
+            return;
+
             TcpListener server = null;
             try
             {
