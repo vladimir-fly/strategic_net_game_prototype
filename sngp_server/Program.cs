@@ -20,9 +20,7 @@ namespace sngp_server
 
         static void Main()
         {
-            var pg = new Playground(playgroundSize, units.ToList());
-            pg.MoveUnit(22, 25);
-            return;
+            var playground = new Playground(playgroundSize, units.ToList());
 
             TcpListener server = null;
             try
@@ -60,7 +58,10 @@ namespace sngp_server
 
                                 break;
                             case (byte) EMessageType.MoveDataRequest:
-                                responseData = new []{MoveUnit(requestData[1], requestData[2])};
+                                responseData = new []{playground.MoveUnit(requestData[1], requestData[2])};
+
+                                Console.WriteLine($"UnitId = {requestData[1]}, NodeId = {requestData[2]}");
+
                                 Console.WriteLine($"Move direction is {responseData[0]}");
                                 break;
                         }
@@ -77,11 +78,6 @@ namespace sngp_server
             {
                 server?.Stop();
             }
-        }
-
-        private static byte MoveUnit(byte unitId, byte NodeId)
-        {
-            return 0;
         }
     }
 }

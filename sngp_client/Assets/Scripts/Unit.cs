@@ -1,5 +1,5 @@
 ﻿using System;
-
+using UnityEditor;
 using UnityEngine;
 
 namespace SNGPClient
@@ -24,8 +24,6 @@ namespace SNGPClient
             var direction = _position - transform.position;
             var targetPosition = Vector3.Distance(transform.position, _position);
 
-            Debug.Log("target position = " + targetPosition);
-
             if (Math.Abs(targetPosition) > 0.01f)
                 transform.Translate(direction * 0.1f);
             else
@@ -48,25 +46,34 @@ namespace SNGPClient
 
         internal void StartMoving(Direction direction)
         {
-            Debug.Log("Unit: " + Id + "; start moving in direction = " + direction);
-
+            //dirty hack with screen cordiante system
             Vector3 directionVector;
             switch (direction)
             {
                 case Direction.Up:
-                    directionVector = Vector3.up;
+                    directionVector = Vector3.left;
+                    Id -= 10;
                     break;
                 case Direction.Down:
-                    directionVector = Vector3.down;
+                    directionVector = Vector3.right;
+                    Id += 10;
                     break;
                 case Direction.Right:
-                    directionVector = Vector3.right;
+                    Id += 1;
+                    directionVector = Vector3.up;
                     break;
                 case Direction.Left:
-                    directionVector = Vector3.left;
+                    Id -= 1;
+                    directionVector = Vector3.down;
+                    break;
+                case Direction.None:
+                    Debug.Log("No direction");
+                    directionVector = Vector3.zero;
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException("direction", direction, null);
+                    Debug.Log("Unknown direction!");
+                    directionVector = Vector3.zero;
+                    break;
             }
 
             _isMoving = true;

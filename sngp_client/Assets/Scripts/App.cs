@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using UnityEngine;
 
 using Debug = UnityEngine.Debug;
@@ -25,10 +26,13 @@ namespace SNGPClient
                     //if (!Playground.SelectedUnits.Any()) return;
                     //todo fix it
 
+                    //while !selectedUnis.contains(nodeid)
+                    //thread.sleep(100)
+
                     foreach (var unit in Playground.SelectedUnits)
                     {
                         var direction = MakeRequest(EMessageType.MoveDataRequest, new List<byte>{unit.Id, nodeId}).FirstOrDefault();
-
+                        Thread.Sleep(50);
                         Debug.Log("Direction is " + ((Direction)direction).ToString());
 
                         unit.StartMoving((Direction) direction);
