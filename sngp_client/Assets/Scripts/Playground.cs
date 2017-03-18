@@ -83,15 +83,11 @@ namespace SNGPClient
                     var screenPoint = new Vector2(position.x, Screen.height - position.y);
 
                     if (!ScopeRect.Contains(screenPoint))
-                    {
                         unit.GetComponent<MeshRenderer>().material.color = new Color(0.177f,0.210f, 0.184f);
-                    }
 
-                    if (ScopeRect.Contains(screenPoint))
-                    {
-                        unit.GetComponent<MeshRenderer>().material.color = Color.red;
-                        SelectedUnits.Add(unit.GetComponent<Unit>());
-                    }
+                    if (!ScopeRect.Contains(screenPoint)) continue;
+                    unit.GetComponent<MeshRenderer>().material.color = Color.red;
+                    SelectedUnits.Add(unit.GetComponent<Unit>());
                 }
             }
 

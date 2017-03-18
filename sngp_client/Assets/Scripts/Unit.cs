@@ -1,5 +1,4 @@
 ﻿using System;
-using UnityEditor;
 using UnityEngine;
 
 namespace SNGPClient
@@ -36,17 +35,12 @@ namespace SNGPClient
 
         void OnMouseDown()
         {
-            //StartMoving(Direction.Right);
-
-            if (OnSelected != null)
-                OnSelected(Id);
-
-            Debug.Log("unit selected id : " + Id);
+            if (OnSelected != null) OnSelected(Id);
         }
 
         internal void StartMoving(Direction direction)
         {
-            //dirty hack with screen cordiante system
+            //Dirty hack with screen cordiante system =)
             Vector3 directionVector;
             switch (direction)
             {

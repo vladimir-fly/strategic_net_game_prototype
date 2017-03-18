@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -20,23 +21,35 @@ namespace SNGPClient
             Playground.NodeSelected =
                 nodeId =>
                 {
-                    if (Playground != null && Playground.SelectedUnits != null)
-                        Debug.Log("Number of selected units is " + Playground.SelectedUnits.Count);
+                    if (Playground == null || Playground.SelectedUnits == null ||
+                        Playground.SelectedUnits.Count == 0) return;
 
-                    //if (!Playground.SelectedUnits.Any()) return;
-                    //todo fix it
+                    var selectedUnitsQueue = new Queue<Unit>(Playground.SelectedUnits);
 
-                    //while !selectedUnis.contains(nodeid)
-                    //thread.sleep(100)
-
-                    foreach (var unit in Playground.SelectedUnits)
+                    Unit unit;
+                    while (selectedUnitsQueue.Count > 0 && (unit = selectedUnitsQueue.Peek()) != null)
+                    //foreach (var unit in Playground.SelectedUnits)
                     {
-                        var direction = MakeRequest(EMessageType.MoveDataRequest, new List<byte>{unit.Id, nodeId}).FirstOrDefault();
-                        Thread.Sleep(50);
-                        Debug.Log("Direction is " + ((Direction)direction).ToString());
+                        Debug.Log("UnitID = " + unit.Id + "; NodeId = " + nodeId);
+
+                        var direction = MakeRequest(EMessageType.MoveDataRequest, new List<byte> {unit.Id, nodeId})
+                            .FirstOrDefault();
+
+                        Debug.Log("Direction is " + ((Direction) direction).ToString());
+
+
+                        if (direction == 0)
+                        {
+                         selectedUnitsQueue.Dequeue();
+                         continue;
+
+                        }
+
 
                         unit.StartMoving((Direction) direction);
-                    }
+
+                           Thread.Sleep(1000);
+                    };
                 };
 
             Playground.InitNodes(PlaygroundSizeRequest());
@@ -73,21 +86,8 @@ namespace SNGPClient
                     }
                 }
             }
-            catch (Exception e) { Debug.LogError("Exception " + e); }
+            catch (Exception e) { Debug.LogError("Connection error: " + e); }
             return result;
         }
-
-//        void OnGUI()
-//        {
-//            if (GUI.Button(new Rect(10f, 10f, 150f, 30f), "Units request"))
-//            {
-//                Debug.Log("Playgrouns size: ");
-//
-//                foreach (var unit in UnitsDataRequest())
-//                {
-//                    Debug.Log("unitId = " + unit);
-//                }
-//            }
-//        }s
     }
 }

@@ -1,12 +1,10 @@
-﻿using System;
-
-namespace SNGPClient
+﻿namespace SNGPClient
 {
     internal enum EMessageType
     {
-        PlaygroundSizeRequest = 0, //1 byte
-        UnitsDataRequest = 1, // >= 5 bytes
-        MoveDataRequest = 2, // 2 bytes
+        PlaygroundSizeRequest = 0,
+        UnitsDataRequest = 1,
+        MoveDataRequest = 2,
     }
 
     internal enum Direction : byte

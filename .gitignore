@@ -1,7 +1,10 @@
 sngp_client/.idea/
 sngp_client/Library/
 sngp_client/Temp/
+sngp_client/obj/
 
 sngp_server/.idea/
 sngp_server/obj/
 sngp_server/bin/
+
+builds/

@@ -11,22 +11,6 @@ namespace sngp_server
         private int[,] _playground;
         public Queue<Point> _pointBuffer = new Queue<Point>();
 
-        public struct Point
-        {
-            public int x;
-            public int y;
-
-            public static bool operator !=(Point a, Point b)
-            {
-                return a.x != b.x || a.y != b.y;
-            }
-
-            public static bool operator ==(Point a, Point b)
-            {
-                return a.x == b.x && a.y == b.y;
-            }
-        }
-
         public Playground(byte size, List<byte> units)
         {
             _size = size;
@@ -36,49 +20,42 @@ namespace sngp_server
         public byte MoveUnit(int unitId, byte nodeId)
         {
             _playground = new int[_size, _size];
+            var unitPoint = new Point {x = unitId / 10, y = unitId % 10};
+            var targetNodePoint = new Point {x = nodeId / 10, y = nodeId % 10};
 
-            for (var i = 0; i < _size; i++)
-            {
-                for (var j = 0; j < _size; j++)
-                {
-                    _playground[i, j] = _units.Any(u => u == i * 10 + j && u != unitId) ? -1 : 0;
-                    Console.Write(_playground[i, j] + " ");
-                }
-                Console.WriteLine();
-            }
-
-            Console.WriteLine($"UnitId = {unitId}, i = {unitId / 10}, j = {unitId % 10}");
-
-            MakeWaves(new Point { x= unitId / 10, y = unitId % 10}, nodeId);
-
-            var path = FindPath(
-                target: new Point{ x = nodeId / 10, y = nodeId % 10 },
-                start: new Point { x= unitId / 10, y = unitId % 10 });
-
-            Console.WriteLine($"Path length {path.Count}");
-
-            var direction = GetNextDirection(path);
-
-            Console.WriteLine($"Next direction = {direction}");
+            InitOtherUnits(unitId);
+            MakeWaves(unitPoint);
 
             ShowPlayground();
 
+            var path = FindPath(targetNodePoint, unitPoint);
+            var direction = GetNextDirection(path);
             var index = _units.FindIndex(u => unitId == u);
 
-            Console.WriteLine($"Moving unit. Id = {unitId}, index = {index} ");
-            _units[index] = (byte) (path.Peek().x * 10 + path.Peek().y);
+            if (path.Any() && index >= 0)
+                _units[index] = (byte) (path.Peek().x * 10 + path.Peek().y);
 
             ShowPlayground();
 
             return direction;
         }
 
+        private void InitOtherUnits(int unitId)
+        {
+            for (var i = 0; i < _size; i++)
+            for (var j = 0; j < _size; j++)
+                _playground[i, j] = _units.Any(u => u == i * 10 + j && u != unitId) ? -1 : 0;
+        }
 
         private Stack<Point> FindPath(Point target, Point start)
         {
             var result = new Stack<Point>();
-            result.Push(target);
             var point = target;
+
+            if (_playground[point.x, point.y] == -1)
+                point = GetMinNearbyPoint(point);
+
+            result.Push(point);
 
             while (point != start)
             {
@@ -111,20 +88,51 @@ namespace sngp_server
                     point = new Point {x = point.x - 1, y = point.y};
                     result.Push(point);
                 }
-
             }
             return result;
         }
 
+        private Point GetMinNearbyPoint(Point target)
+        {
+            var mooreNeighborhood = new List<Point>();
+
+            if (target.y - 1 > 0 && _playground[target.x, target.y - 1] != -1)
+                mooreNeighborhood.Add(new Point{x = target.x, y = target.y - 1}); //North
+
+            if (target.y + 1 < _size && _playground[target.x, target.y + 1] != -1)
+                mooreNeighborhood.Add(new Point{x = target.x, y = target.y + 1}); //South
+
+            if (target.x + 1 < _size && _playground[target.x + 1, target.y] != -1)
+                mooreNeighborhood.Add(new Point{x = target.x + 1, y = target.y}); //East
+
+            if (target.x - 1 > 0 && _playground[target.x - 1, target.y] != -1)
+                mooreNeighborhood.Add(new Point{x = target.x - 1, y = target.y}); //West
+
+            if (target.x - 1 > 0 && target.y - 1 > 0 && _playground[target.x - 1, target.y - 1] != -1)
+                mooreNeighborhood.Add(new Point{x = target.x - 1, y = target.y - 1}); //NorthWest
+
+            if (target.x + 1 < _size && target.y - 1 > 0 && _playground[target.x + 1, target.y - 1] != -1)
+                mooreNeighborhood.Add(new Point{x = target.x + 1, y = target.y - 1}); //NorthEast
+
+            if (target.x - 1 > 0 && target.y + 1 < _size && _playground[target.x - 1, target.y + 1] != -1)
+                mooreNeighborhood.Add(new Point{x = target.x - 1, y = target.y + 1}); //SouthWest
+
+            if (target.x + 1 < _size && target.y + 1 < _size && _playground[target.x + 1, target.y + 1] != -1)
+                mooreNeighborhood.Add(new Point{x = target.x + 1, y = target.y + 1}); //SouthEast
+
+            return mooreNeighborhood.OrderByDescending(p => _playground[p.x, p.y]).FirstOrDefault();
+        }
+
         private byte GetNextDirection(Stack<Point> path)
         {
-            if (path.Count == 0) return 0;
+            if (path.Count < 2) return 0;
             var currentPoint = path.Pop();
+            var nextPoint = path.Peek();
 
-            if (path.Peek().x - currentPoint.x == -1 && path.Peek().y == currentPoint.y) return 1; //up
-            if (path.Peek().x - currentPoint.x == 1 && path.Peek().y == currentPoint.y) return 2; //down
-            if (path.Peek().x == currentPoint.x && path.Peek().y - currentPoint.y == 1) return 3; //right
-            if (path.Peek().x == currentPoint.x && path.Peek().y - currentPoint.y == -1) return 4; //left
+            if (nextPoint.x - currentPoint.x == -1 && nextPoint.y == currentPoint.y) return 1; //up
+            if (nextPoint.x - currentPoint.x == 1 && nextPoint.y == currentPoint.y) return 2; //down
+            if (nextPoint.x == currentPoint.x && nextPoint.y - currentPoint.y == 1) return 3; //right
+            if (nextPoint.x == currentPoint.x && nextPoint.y - currentPoint.y == -1) return 4; //left
 
             return 0;
         }
@@ -134,53 +142,52 @@ namespace sngp_server
             return _pointBuffer.Count > 0 ? _pointBuffer.Dequeue() : new Point{x = -1, y = -1};
         }
 
-        public void MakeWaves(Point start, int targetNodeId)
+        public void MakeWaves(Point start)
         {
-
-            if (start.x < 0 || start.x > _size || start.y < 0|| start.y > _size  /*|| _playground[x, y] == -1*/) return;
+            if (start.x < 0 || start.x > _size || start.y < 0|| start.y > _size) return;
 
             _pointBuffer.Enqueue(start);
 
             Point point;
             while ((point = SafeDequeue()).x != -1 && point.y != -1)
             {
-                if (point.y - 1 >= 0 && _playground[point.x, point.y - 1] == 0)//&& (point.x * 10 + (point.y - 1)) != targetNodeId) //up
+                if (point.y - 1 >= 0 && _playground[point.x, point.y - 1] == 0) //up
                 {
-                    var tpoint = new Point {x = point.x, y = point.y - 1};
-                    if (tpoint != start)
+                    var tmp = new Point {x = point.x, y = point.y - 1};
+                    if (tmp != start)
                     {
                         _playground[point.x, point.y - 1] = _playground[point.x, point.y] + 1;
-                        _pointBuffer.Enqueue(tpoint);
+                        _pointBuffer.Enqueue(tmp);
                     }
                 }
 
-                if (point.y + 1 < _size && _playground[point.x, point.y + 1] == 0)// && (point.x * 10 + (point.y + 1)) != targetNodeId) //down
+                if (point.y + 1 < _size && _playground[point.x, point.y + 1] == 0) //down
                 {
-                    var tpoint = new Point {x = point.x, y = point.y + 1};
-                    if (tpoint != start)
+                    var tmp = new Point {x = point.x, y = point.y + 1};
+                    if (tmp != start)
                     {
                         _playground[point.x, point.y + 1] = _playground[point.x, point.y] + 1;
-                        _pointBuffer.Enqueue(tpoint);
+                        _pointBuffer.Enqueue(tmp);
                     }
                 }
 
-                if (point.x + 1 < _size && _playground[point.x + 1, point.y] == 0)// && ((point.x + 1) * 10 + point.y) != targetNodeId) //right
+                if (point.x + 1 < _size && _playground[point.x + 1, point.y] == 0) //right
                 {
-                    var tpoint = new Point {x = point.x + 1, y = point.y};
-                    if (tpoint != start)
+                    var tmp = new Point {x = point.x + 1, y = point.y};
+                    if (tmp != start)
                     {
                         _playground[point.x + 1, point.y] = _playground[point.x, point.y] + 1;
-                        _pointBuffer.Enqueue(tpoint);
+                        _pointBuffer.Enqueue(tmp);
                     }
                 }
 
-                if (point.x - 1 >= 0 && _playground[point.x - 1, point.y] == 0)// && ((point.x - 1) * 10 + point.y) != targetNodeId) //left
+                if (point.x - 1 >= 0 && _playground[point.x - 1, point.y] == 0) //left
                 {
-                    var tpoint = new Point {x = point.x - 1, y = point.y};
-                    if (tpoint != start)
+                    var tmp = new Point {x = point.x - 1, y = point.y};
+                    if (tmp != start)
                     {
                         _playground[point.x - 1, point.y] = _playground[point.x, point.y] + 1;
-                        _pointBuffer.Enqueue(tpoint);
+                        _pointBuffer.Enqueue(tmp);
                     }
                 }
 
@@ -190,14 +197,9 @@ namespace sngp_server
         private void ShowPlayground()
         {
             for (var i = 0; i < _size; i++)
-            {
                 for (var j = 0; j < _size; j++)
-                {
-                    var result = _units.Any(u => u == i * 10 + j) ? i * 10 + j : 0;
-                    Console.Write($" {result} ");
-                }
+                    Console.Write($" {_playground[i, j]} ");
                 Console.WriteLine();
-            }
             Console.WriteLine();
         }
     }
